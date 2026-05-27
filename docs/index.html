@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>动物农场 - 超好玩的三消游戏</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #2c3e50;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    #webglCanvas, #uiCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    #webglCanvas {
+      z-index: 1;
+    }
+
+    #uiCanvas {
+      z-index: 2;
+    }
+
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 20px;
+      text-align: center;
+      z-index: 10;
+    }
+
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255,0,0,0.9);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 80%;
+      z-index: 100;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">
+    <div class="loading-spinner"></div>
+    <div>加载中...</div>
+  </div>
+
+  <div id="errorDisplay" class="error" style="display: none;"></div>
+
+  <!-- WebGL Canvas for 3D rendering -->
+  <canvas id="webglCanvas"></canvas>
+  <!-- UI Canvas for 2D UI overlay -->
+  <canvas id="uiCanvas" class="interactive"></canvas>
+
+  <!-- Three.js - 多个CDN备用 -->
+  <script src="https://cdn.bootcdn.net/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // 如果主CDN失败，尝试备用CDN
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://lib.baomitu.com/three.js/r128/three.min.js"><\/script>');
+    }
+  </script>
+
+  <script>
+    function showError(message) {
+      document.getElementById('loading').style.display = 'none';
+      const errorDiv = document.getElementById('errorDisplay');
+      errorDiv.textContent = message;
+      errorDiv.style.display = 'block';
+    }
+
+    console.log('开始加载...');
+
+    // 检查必要的库
+    if (typeof THREE === 'undefined') {
+      showError('Three.js 未加载！请检查网络连接。');
+    } else {
+      console.log('✓ Three.js 已加载');
+    }
+
+    // 加载脚本
+    const scripts = [
+      'js/wx-adapter.js',
+      'js/audioManager.js',
+      'js/gameLogic.js',
+      'js/physics-manager.js',
+      'js/frame-animation.js',
+      'js/scene-3d.js',
+      'js/game.js'
+    ];
+
+    let loadedScripts = 0;
+    const totalScripts = scripts.length;
+
+    function loadScript(index) {
+      if (index >= scripts.length) {
+        // 所有脚本加载完成，初始化游戏
+        initGame();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = scripts[index];
+      script.onload = function() {
+        console.log('✓ ' + scripts[index]);
+        loadedScripts++;
+        loadScript(index + 1);
+      };
+      script.onerror = function() {
+        showError('加载失败: ' + scripts[index]);
+      };
+      document.head.appendChild(script);
+    }
+
+    function initGame() {
+      console.log('所有脚本加载完成');
+
+      // 检查所有必要的模块
+      const requiredModules = {
+        'Game': 'Game 类',
+        'AudioManager': '音频管理器',
+        'GameLogic': '游戏逻辑',
+        'PhysicsManager': '物理管理器',
+        'FrameAnimation': '帧动画',
+        'Scene3D': '3D场景'
+      };
+
+      let allModulesLoaded = true;
+      let missingModules = [];
+      for (const [module, name] of Object.entries(requiredModules)) {
+        if (typeof window[module] === 'undefined') {
+          console.error(`✗ ${name} (${module}) 未加载`);
+          allModulesLoaded = false;
+          missingModules.push(name);
+        } else {
+          console.log(`✓ ${name} (${module}) 已加载`);
+        }
+      }
+
+      if (!allModulesLoaded) {
+        showError('缺少模块: ' + missingModules.join(', '));
+        return;
+      }
+
+      setTimeout(function() {
+        document.getElementById('loading').style.display = 'none';
+
+        try {
+          if (typeof Game !== 'undefined') {
+            console.log('初始化游戏...');
+            window.game = new Game();
+            console.log('✓ 游戏初始化完成');
+
+            // 注册触摸事件
+            wx.onTouchStart((e) => {
+              console.log('[触摸事件] touchstart:', e);
+              if (e && e.length > 0) {
+                const touch = e[0];
+                console.log('[触摸事件] 调用 onTouchStart:', touch.x, touch.y);
+                window.game.onTouchStart(touch.x, touch.y);
+              }
+            });
+
+            wx.onTouchMove((e) => {
+              if (e && e.length > 0) {
+                const touch = e[0];
+                window.game.onTouchMove(touch.x, touch.y);
+              }
+            });
+
+            wx.onTouchEnd((e) => {
+              console.log('[触摸事件] touchend:', e);
+              if (e && e.length > 0) {
+                const touch = e[0];
+                window.game.onTouchEnd(touch.x, touch.y);
+              }
+            });
+
+            console.log('✓ 触摸事件已注册');
+          } else {
+            showError('Game 类未定义！请检查脚本加载顺序。');
+          }
+        } catch (e) {
+          showError('游戏初始化失败: ' + e.message);
+          console.error('游戏初始化错误:', e);
+        }
+      }, 500);
+    }
+
+    // 开始加载脚本
+    loadScript(0);
+
+    // 防止默认触摸行为
+    document.addEventListener('touchmove', function(e) {
+      e.preventDefault();
+    }, { passive: false });
+
+    document.addEventListener('gesturestart', function(e) {
+      e.preventDefault();
+    });
+  </script>
+</body>
+</html>
