@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>动物农场 - 测试页面</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    .test-item {
+      margin: 10px 0;
+      padding: 10px;
+      background: white;
+      border-radius: 5px;
+    }
+    .success { color: green; }
+    .error { color: red; }
+    canvas { border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>动物农场 - 模块加载测试</h1>
+  <div id="results"></div>
+  <canvas id="testCanvas"></canvas>
+
+  <script>
+    const results = document.getElementById('results');
+
+    function log(message, isSuccess) {
+      const div = document.createElement('div');
+      div.className = 'test-item ' + (isSuccess ? 'success' : 'error');
+      div.textContent = message;
+      results.appendChild(div);
+      console.log(message);
+    }
+
+    // 测试1: 检查全局对象
+    log('测试1: 检查全局对象...', true);
+    log('  THREE: ' + (typeof THREE !== 'undefined' ? '✓ 已加载' : '✗ 未加载'), typeof THREE !== 'undefined');
+    log('  CANNON: ' + (typeof CANNON !== 'undefined' ? '✓ 已加载' : '✗ 未加载'), typeof CANNON !== 'undefined');
+
+    // 测试2: 检查Canvas
+    log('测试2: 检查Canvas支持...', true);
+    const canvas = document.getElementById('testCanvas');
+    canvas.width = 300;
+    canvas.height = 200;
+    const ctx = canvas.getContext('2d');
+    log('  2D Context: ' + (ctx ? '✓ 支持' : '✗ 不支持'), !!ctx);
+
+    const glCanvas = document.createElement('canvas');
+    const gl = glCanvas.getContext('webgl') || glCanvas.getContext('experimental-webgl');
+    log('  WebGL Context: ' + (gl ? '✓ 支持' : '✗ 不支持'), !!gl);
+
+    // 测试3: 检查资源文件
+    log('测试3: 检查资源文件...', true);
+
+    const testImage = new Image();
+    testImage.onload = function() {
+      log('  背景图 (homepage-bg.png): ✓ 加载成功', true);
+      testResources();
+    };
+    testImage.onerror = function() {
+      log('  背景图 (homepage-bg.png): ✗ 加载失败', false);
+      testResources();
+    };
+    testImage.src = 'miniprogram/images/homepage-bg.png';
+
+    function testResources() {
+      // 测试4: 检查帧动画文件
+      const frameImage = new Image();
+      frameImage.onload = function() {
+        log('  帧动画 (frame_001.png): ✓ 加载成功', true);
+        testAudio();
+      };
+      frameImage.onerror = function() {
+        log('  帧动画 (frame_001.png): ✗ 加载失败', false);
+        testAudio();
+      };
+      frameImage.src = 'miniprogram/images/bg/frame_001.png';
+    }
+
+    function testAudio() {
+      // 测试5: 检查音频文件
+      const audio = new Audio();
+      audio.addEventListener('canplay', function() {
+        log('  音频 (level1-2-bg.mp3): ✓ 可用', true);
+        finishTest();
+      }, { once: true });
+      audio.addEventListener('error', function() {
+        log('  音频 (level1-2-bg.mp3): ✗ 加载失败', false);
+        finishTest();
+      });
+      audio.src = 'miniprogram/images/audio/level1-2-bg.mp3';
+    }
+
+    function finishTest() {
+      log('所有测试完成！', true);
+      log('如果所有测试都显示绿色，说明环境正常。', true);
+      log('可以尝试打开 index.html 启动游戏。', true);
+    }
+  </script>
+</body>
+</html>

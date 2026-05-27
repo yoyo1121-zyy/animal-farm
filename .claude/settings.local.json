@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__web-reader__webReader",
+      "PowerShell(Copy-Item \"D:\\\\����Ŀ\\\\��ˮ.mp3\" \"d:\\\\����Ŀ\\\\zhuadage-h5-web\\\\miniprogram\\\\images\\\\audio\\\\bucket.mp3\")"
+    ],
+    "additionalDirectories": [
+      "D:\\����Ŀ"
+    ]
+  }
+}
